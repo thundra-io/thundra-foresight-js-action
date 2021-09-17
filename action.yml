@@ -14,7 +14,7 @@ inputs:
     default: "jest"
   environment:
     required: false
-    description: "Framework to run your tests"
+    description: "Environment to run your tests"
     default: "node"
   command:
     required: false
