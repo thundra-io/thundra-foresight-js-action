@@ -1,0 +1,1 @@
+export const MIN_THUNDRA_AGENT_VERSION = '2.12.19'
