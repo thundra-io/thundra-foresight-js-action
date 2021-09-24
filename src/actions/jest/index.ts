@@ -8,9 +8,9 @@ import * as Helper from '../helper/package'
 
 import { runTests } from '../helper/execute-test'
 
-const THUNDRA_JEST_JSDOM_ENVIRONMENT = '--env=@thundra/core/dist/bootstrap/jest/JestEnvironmentJsdom.js'
+const THUNDRA_JEST_JSDOM_ENVIRONMENT = '--env=@thundra/core/dist/bootstrap/foresight/jest/JestEnvironmentJsdom.js'
 
-const THUNDRA_JEST_NODE_ENVIRONMENT = '--env=@thundra/core/dist/bootstrap/jest/JestEnvironmentNode.js'
+const THUNDRA_JEST_NODE_ENVIRONMENT = '--env=@thundra/core/dist/bootstrap/foresight/jest/JestEnvironmentNode.js'
 
 const JEST_DEFAULT_ARGUMENTS = ['--testRunner=jest-circus/runner']
 
