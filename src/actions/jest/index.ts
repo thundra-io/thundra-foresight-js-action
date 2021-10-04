@@ -8,6 +8,8 @@ import * as Helper from '../helper/package'
 
 import { runTests } from '../helper/execute-test'
 
+import { JEST_ENVIRONMENTS } from '../../constants'
+
 const THUNDRA_JEST_JSDOM_ENVIRONMENT = '--env=@thundra/core/dist/bootstrap/foresight/jest/JestEnvironmentJsdom.js'
 
 const THUNDRA_JEST_NODE_ENVIRONMENT = '--env=@thundra/core/dist/bootstrap/foresight/jest/JestEnvironmentNode.js'
@@ -36,9 +38,9 @@ export default async function run(): Promise<void> {
         await exec.exec(jestCircusInstallCmd, [], { ignoreReturnCode: true })
     }
 
-    environment === 'node'
+    environment === JEST_ENVIRONMENTS.node
         ? JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_NODE_ENVIRONMENT)
-        : environment === 'jsdom'
+        : environment === JEST_ENVIRONMENTS.jsdom
         ? JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_JSDOM_ENVIRONMENT)
         : undefined
 

@@ -192,8 +192,9 @@ const core = __importStar(__webpack_require__(2186));
 const exec = __importStar(__webpack_require__(1514));
 const Helper = __importStar(__webpack_require__(6297));
 const execute_test_1 = __webpack_require__(8276);
-const THUNDRA_JEST_JSDOM_ENVIRONMENT = '--env=@thundra/core/dist/bootstrap/jest/JestEnvironmentJsdom.js';
-const THUNDRA_JEST_NODE_ENVIRONMENT = '--env=@thundra/core/dist/bootstrap/jest/JestEnvironmentNode.js';
+const constants_1 = __webpack_require__(7306);
+const THUNDRA_JEST_JSDOM_ENVIRONMENT = '--env=@thundra/core/dist/bootstrap/foresight/jest/JestEnvironmentJsdom.js';
+const THUNDRA_JEST_NODE_ENVIRONMENT = '--env=@thundra/core/dist/bootstrap/foresight/jest/JestEnvironmentNode.js';
 const JEST_DEFAULT_ARGUMENTS = ['--testRunner=jest-circus/runner'];
 const environment = core.getInput('environment');
 const command = core.getInput('command');
@@ -212,9 +213,9 @@ function run() {
                 : Helper.createNpmInstallCommand(`jest-circus@${jestVersion}`);
             yield exec.exec(jestCircusInstallCmd, [], { ignoreReturnCode: true });
         }
-        environment === 'node'
+        environment === constants_1.JEST_ENVIRONMENTS.node
             ? JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_NODE_ENVIRONMENT)
-            : environment === 'jsdom'
+            : environment === constants_1.JEST_ENVIRONMENTS.jsdom
                 ? JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_JSDOM_ENVIRONMENT)
                 : undefined;
         const args = Helper.isYarnRepo() ? JEST_DEFAULT_ARGUMENTS : ['--', ...JEST_DEFAULT_ARGUMENTS];
@@ -232,8 +233,12 @@ exports.default = run;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.MIN_THUNDRA_AGENT_VERSION = void 0;
+exports.JEST_ENVIRONMENTS = exports.MIN_THUNDRA_AGENT_VERSION = void 0;
 exports.MIN_THUNDRA_AGENT_VERSION = '2.12.19';
+exports.JEST_ENVIRONMENTS = {
+    node: 'node',
+    jsdom: 'jsdom'
+};
 
 
 /***/ }),
