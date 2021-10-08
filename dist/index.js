@@ -234,7 +234,7 @@ exports.default = run;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.JEST_ENVIRONMENTS = exports.MIN_THUNDRA_AGENT_VERSION = void 0;
-exports.MIN_THUNDRA_AGENT_VERSION = '2.12.19';
+exports.MIN_THUNDRA_AGENT_VERSION = '2.13.0';
 exports.JEST_ENVIRONMENTS = {
     node: 'node',
     jsdom: 'jsdom'
@@ -301,7 +301,7 @@ if (!project_id) {
     process.exit(core.ExitCode.Success);
 }
 if (agent_version && semver.lt(agent_version, constants_1.MIN_THUNDRA_AGENT_VERSION)) {
-    core.setFailed(`Thundra Nodejs Agent prior to ${agent_version} doesn't work with this action`);
+    core.setFailed(`Thundra Nodejs Agent prior to ${constants_1.MIN_THUNDRA_AGENT_VERSION} doesn't work with this action`);
     process.exit(core.ExitCode.Success);
 }
 if (!actions.isValidFramework(framework) || !actions.isValidFramework(framework.toLowerCase())) {

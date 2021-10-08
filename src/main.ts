@@ -32,7 +32,7 @@ if (!project_id) {
 }
 
 if (agent_version && semver.lt(agent_version, MIN_THUNDRA_AGENT_VERSION)) {
-    core.setFailed(`Thundra Nodejs Agent prior to ${agent_version} doesn't work with this action`)
+    core.setFailed(`Thundra Nodejs Agent prior to ${MIN_THUNDRA_AGENT_VERSION} doesn't work with this action`)
 
     process.exit(core.ExitCode.Success)
 }
