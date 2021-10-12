@@ -112,7 +112,7 @@ function createNpmInstallCommand(dependency) {
 }
 exports.createNpmInstallCommand = createNpmInstallCommand;
 function createYarnAddCommand(dependency) {
-    return `yarn add --dev ${dependency}`;
+    return `yarn add ${dependency} --dev -W`;
 }
 exports.createYarnAddCommand = createYarnAddCommand;
 function isYarnRepo() {

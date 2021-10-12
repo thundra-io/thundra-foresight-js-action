@@ -30,7 +30,7 @@ export function createNpmInstallCommand(dependency: string): string {
 }
 
 export function createYarnAddCommand(dependency: string): string {
-    return `yarn add --dev ${dependency}`
+    return `yarn add ${dependency} --dev -W`
 }
 
 export function isYarnRepo(): boolean {
