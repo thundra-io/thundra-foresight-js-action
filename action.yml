@@ -15,7 +15,6 @@ inputs:
   environment:
     required: false
     description: "Environment to run your tests"
-    default: "node"
   command:
     required: false
     description: "Command to run your tests"

@@ -4,11 +4,14 @@
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 
-import * as Helper from '../helper/package'
+import * as CommandHelper from '../helper/command'
+import * as PackageHelper from '../helper/package'
 
 import { runTests } from '../helper/execute-test'
 
-import { JEST_ENVIRONMENTS } from '../../constants'
+import { JEST_ENVIRONMENTS, TEST_FRAMEWORKS, KNOWN_JEST_ARGUMENTS } from '../../constants'
+
+const THUNDRA_JEST_DEFAULT_ENVIRONMENT = '--env=@thundra/core/dist/bootstrap/foresight/jest/JestDefaultEnvironment.js'
 
 const THUNDRA_JEST_JSDOM_ENVIRONMENT = '--env=@thundra/core/dist/bootstrap/foresight/jest/JestEnvironmentJsdom.js'
 
@@ -16,35 +19,120 @@ const THUNDRA_JEST_NODE_ENVIRONMENT = '--env=@thundra/core/dist/bootstrap/foresi
 
 const JEST_DEFAULT_ARGUMENTS = ['--testRunner=jest-circus/runner']
 
+const JEST_WORKER_ARGUMENTS = ['--maxWorkers=50%']
+
 const environment: string = core.getInput('environment')
 const command: string = core.getInput('command')
+
+function getThundraJestArgs(): string[] {
+    environment === JEST_ENVIRONMENTS.node
+        ? JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_NODE_ENVIRONMENT)
+        : environment === JEST_ENVIRONMENTS.jsdom
+        ? JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_JSDOM_ENVIRONMENT)
+        : JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_DEFAULT_ENVIRONMENT)
+
+    return JEST_DEFAULT_ARGUMENTS
+}
+
+function parseAndReplaceCommand(commandStr: string): string | undefined {
+    const parsedCommand = CommandHelper.parseCommand(commandStr)
+
+    const hasOperator = parsedCommand.some(x => typeof x === 'object' && x.op)
+    if (!hasOperator) {
+        return
+    }
+
+    const orginalCommandPieces = []
+    const newCommandPieces = []
+
+    const startIndex = parsedCommand.indexOf('jest')
+
+    let addWorkerFlag = true
+    for (let i = startIndex; i < parsedCommand.length; i++) {
+        const piece = parsedCommand[i]
+
+        if (typeof piece === 'object' && piece.op) {
+            break
+        }
+
+        if (
+            addWorkerFlag &&
+            (piece.startsWith(KNOWN_JEST_ARGUMENTS.runInBand.value) ||
+                piece.startsWith(KNOWN_JEST_ARGUMENTS.runInBand.alias) ||
+                piece.startsWith(KNOWN_JEST_ARGUMENTS.maxWorkers.value) ||
+                piece.startsWith(KNOWN_JEST_ARGUMENTS.maxWorkers.alias))
+        ) {
+            addWorkerFlag = false
+        }
+
+        orginalCommandPieces.push(piece)
+
+        if (
+            piece.startsWith(KNOWN_JEST_ARGUMENTS.testRunner.value) ||
+            piece.startsWith(KNOWN_JEST_ARGUMENTS.env.value)
+        ) {
+            continue
+        }
+
+        newCommandPieces.push(piece)
+    }
+
+    const willBeReplaced = orginalCommandPieces.join(' ')
+
+    if (addWorkerFlag) {
+        newCommandPieces.push(...JEST_WORKER_ARGUMENTS)
+    }
+
+    newCommandPieces.push(...getThundraJestArgs())
+
+    return command.replace(willBeReplaced, newCommandPieces.join(' '))
+}
 
 export default async function run(): Promise<void> {
     core.info(`[Thundra] Jest will run test for environment ${environment}...`)
 
-    const jestVersion = await Helper.getDependencyVersion('jest')
+    const jestVersion = await PackageHelper.getDependencyVersion('jest')
     if (!jestVersion) {
         core.warning(`Jest must be added in project`)
 
         process.exit(core.ExitCode.Success)
     }
 
-    const jestCircusVersion = await Helper.getDependencyVersion('jest-circus')
+    const jestCircusVersion = await PackageHelper.getDependencyVersion('jest-circus')
     if (!jestCircusVersion) {
-        const jestCircusInstallCmd = Helper.isYarnRepo()
-            ? Helper.createYarnAddCommand(`jest-circus@${jestVersion}`)
-            : Helper.createNpmInstallCommand(`jest-circus@${jestVersion}`)
+        const jestCircusInstallCmd = PackageHelper.isYarnRepo()
+            ? PackageHelper.createYarnAddCommand(`jest-circus@${jestVersion}`)
+            : PackageHelper.createNpmInstallCommand(`jest-circus@${jestVersion}`)
 
         await exec.exec(jestCircusInstallCmd, [], { ignoreReturnCode: true })
     }
 
-    environment === JEST_ENVIRONMENTS.node
-        ? JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_NODE_ENVIRONMENT)
-        : environment === JEST_ENVIRONMENTS.jsdom
-        ? JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_JSDOM_ENVIRONMENT)
-        : undefined
+    try {
+        core.warning(command)
+        const commandPieces = CommandHelper.parseCommand(command)
+        const commandArgs = CommandHelper.getCommandPart(commandPieces)
+        const commandKeyword = commandArgs[commandArgs.length - 1]
 
-    const args = Helper.isYarnRepo() ? JEST_DEFAULT_ARGUMENTS : ['--', ...JEST_DEFAULT_ARGUMENTS]
+        const commandStr = await PackageHelper.getScript(commandKeyword)
 
-    await runTests(command, args)
+        if (!commandStr || !commandStr.includes(TEST_FRAMEWORKS.jest)) {
+            throw new Error('')
+        }
+
+        const parsedCommand = parseAndReplaceCommand(commandStr)
+        if (!parsedCommand) {
+            throw new Error('')
+        }
+
+        await PackageHelper.updateFile('package.json', JSON.stringify(parsedCommand))
+
+        core.warning(JSON.stringify(await PackageHelper.getPackageJson()))
+
+        await runTests(command)
+    } catch (error) {
+        const thundraArgs = getThundraJestArgs()
+        const args = PackageHelper.isYarnRepo() ? thundraArgs : ['--', ...thundraArgs]
+
+        await runTests(command, args)
+    }
 }

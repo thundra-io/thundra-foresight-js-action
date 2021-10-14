@@ -2,6 +2,36 @@ require('./sourcemap-register.js');module.exports =
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 2646:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getCommandPart = exports.minimistArgs = exports.parseCommand = void 0;
+const minimist_1 = __importDefault(__webpack_require__(5871));
+const shell_quote_1 = __importDefault(__webpack_require__(7029));
+// import { getScript } from './package'
+function parseCommand(command) {
+    return shell_quote_1.default.parse(command);
+}
+exports.parseCommand = parseCommand;
+function minimistArgs(args) {
+    return (0, minimist_1.default)(args);
+}
+exports.minimistArgs = minimistArgs;
+function getCommandPart(args) {
+    return minimistArgs(args)['_'];
+}
+exports.getCommandPart = getCommandPart;
+
+
+/***/ }),
+
 /***/ 8276:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
@@ -38,7 +68,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.runTests = void 0;
 const exec = __importStar(__webpack_require__(1514));
-function runTests(command, args, envVariables = {}) {
+function runTests(command, args = [], envVariables = {}) {
     return __awaiter(this, void 0, void 0, function* () {
         return exec.exec(command, args, {
             env: Object.assign(Object.assign({}, process.env), envVariables)
@@ -55,6 +85,7 @@ exports.runTests = runTests;
 
 "use strict";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable sort-imports */
 /* eslint-disable i18n-text/no-en */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
@@ -89,10 +120,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.isYarnRepo = exports.createYarnAddCommand = exports.createNpmInstallCommand = exports.getDependencyVersion = void 0;
+exports.updateFile = exports.isYarnRepo = exports.createYarnAddCommand = exports.createNpmInstallCommand = exports.getDependencyVersion = exports.setScript = exports.getScript = exports.getPackageJson = void 0;
 const core = __importStar(__webpack_require__(2186));
 const fs_1 = __importDefault(__webpack_require__(5747));
 const path_1 = __importDefault(__webpack_require__(5622));
+const util_1 = __importDefault(__webpack_require__(1669));
+const WriteFile = util_1.default.promisify(fs_1.default.writeFile);
 const workspace = process.env.GITHUB_WORKSPACE;
 if (!workspace) {
     core.warning('There is no defined workspace');
@@ -100,9 +133,33 @@ if (!workspace) {
 }
 const dir = path_1.default.resolve(workspace);
 const packagePath = path_1.default.join(dir, 'package.json');
+function getPackageJson() {
+    return __awaiter(this, void 0, void 0, function* () {
+        return yield Promise.resolve().then(() => __importStar(require(packagePath)));
+    });
+}
+exports.getPackageJson = getPackageJson;
+function getScript(scriptName) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const packageJson = yield getPackageJson();
+        if (packageJson.script && packageJson.script[scriptName]) {
+            return packageJson.script[scriptName];
+        }
+    });
+}
+exports.getScript = getScript;
+function setScript(scriptName, scriptValue) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const packageJson = yield getPackageJson();
+        if (packageJson.script && packageJson.script[scriptName]) {
+            packageJson.script[scriptName] = scriptValue;
+        }
+    });
+}
+exports.setScript = setScript;
 function getDependencyVersion(dependency) {
     return __awaiter(this, void 0, void 0, function* () {
-        const packageJson = yield Promise.resolve().then(() => __importStar(require(packagePath)));
+        const packageJson = yield getPackageJson();
         return packageJson.devDependencies[dependency] || packageJson.dependencies[dependency];
     });
 }
@@ -119,6 +176,12 @@ function isYarnRepo() {
     return fs_1.default.existsSync('yarn.lock');
 }
 exports.isYarnRepo = isYarnRepo;
+function updateFile(filePath, content) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield WriteFile(filePath, content);
+    });
+}
+exports.updateFile = updateFile;
 
 
 /***/ }),
@@ -190,36 +253,98 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__webpack_require__(2186));
 const exec = __importStar(__webpack_require__(1514));
-const Helper = __importStar(__webpack_require__(6297));
+const CommandHelper = __importStar(__webpack_require__(2646));
+const PackageHelper = __importStar(__webpack_require__(6297));
 const execute_test_1 = __webpack_require__(8276);
 const constants_1 = __webpack_require__(7306);
+const THUNDRA_JEST_DEFAULT_ENVIRONMENT = '--env=@thundra/core/dist/bootstrap/foresight/jest/JestDefaultEnvironment.js';
 const THUNDRA_JEST_JSDOM_ENVIRONMENT = '--env=@thundra/core/dist/bootstrap/foresight/jest/JestEnvironmentJsdom.js';
 const THUNDRA_JEST_NODE_ENVIRONMENT = '--env=@thundra/core/dist/bootstrap/foresight/jest/JestEnvironmentNode.js';
 const JEST_DEFAULT_ARGUMENTS = ['--testRunner=jest-circus/runner'];
+const JEST_WORKER_ARGUMENTS = ['--maxWorkers=50%'];
 const environment = core.getInput('environment');
 const command = core.getInput('command');
+function getThundraJestArgs() {
+    environment === constants_1.JEST_ENVIRONMENTS.node
+        ? JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_NODE_ENVIRONMENT)
+        : environment === constants_1.JEST_ENVIRONMENTS.jsdom
+            ? JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_JSDOM_ENVIRONMENT)
+            : JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_DEFAULT_ENVIRONMENT);
+    return JEST_DEFAULT_ARGUMENTS;
+}
+function parseAndReplaceCommand(commandStr) {
+    const parsedCommand = CommandHelper.parseCommand(commandStr);
+    const hasOperator = parsedCommand.some(x => typeof x === 'object' && x.op);
+    if (!hasOperator) {
+        return;
+    }
+    const orginalCommandPieces = [];
+    const newCommandPieces = [];
+    const startIndex = parsedCommand.indexOf('jest');
+    let addWorkerFlag = true;
+    for (let i = startIndex; i < parsedCommand.length; i++) {
+        const piece = parsedCommand[i];
+        if (typeof piece === 'object' && piece.op) {
+            break;
+        }
+        if (addWorkerFlag &&
+            (piece.startsWith(constants_1.KNOWN_JEST_ARGUMENTS.runInBand.value) ||
+                piece.startsWith(constants_1.KNOWN_JEST_ARGUMENTS.runInBand.alias) ||
+                piece.startsWith(constants_1.KNOWN_JEST_ARGUMENTS.maxWorkers.value) ||
+                piece.startsWith(constants_1.KNOWN_JEST_ARGUMENTS.maxWorkers.alias))) {
+            addWorkerFlag = false;
+        }
+        orginalCommandPieces.push(piece);
+        if (piece.startsWith(constants_1.KNOWN_JEST_ARGUMENTS.testRunner.value) ||
+            piece.startsWith(constants_1.KNOWN_JEST_ARGUMENTS.env.value)) {
+            continue;
+        }
+        newCommandPieces.push(piece);
+    }
+    const willBeReplaced = orginalCommandPieces.join(' ');
+    if (addWorkerFlag) {
+        newCommandPieces.push(...JEST_WORKER_ARGUMENTS);
+    }
+    newCommandPieces.push(...getThundraJestArgs());
+    return command.replace(willBeReplaced, newCommandPieces.join(' '));
+}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         core.info(`[Thundra] Jest will run test for environment ${environment}...`);
-        const jestVersion = yield Helper.getDependencyVersion('jest');
+        const jestVersion = yield PackageHelper.getDependencyVersion('jest');
         if (!jestVersion) {
             core.warning(`Jest must be added in project`);
             process.exit(core.ExitCode.Success);
         }
-        const jestCircusVersion = yield Helper.getDependencyVersion('jest-circus');
+        const jestCircusVersion = yield PackageHelper.getDependencyVersion('jest-circus');
         if (!jestCircusVersion) {
-            const jestCircusInstallCmd = Helper.isYarnRepo()
-                ? Helper.createYarnAddCommand(`jest-circus@${jestVersion}`)
-                : Helper.createNpmInstallCommand(`jest-circus@${jestVersion}`);
+            const jestCircusInstallCmd = PackageHelper.isYarnRepo()
+                ? PackageHelper.createYarnAddCommand(`jest-circus@${jestVersion}`)
+                : PackageHelper.createNpmInstallCommand(`jest-circus@${jestVersion}`);
             yield exec.exec(jestCircusInstallCmd, [], { ignoreReturnCode: true });
         }
-        environment === constants_1.JEST_ENVIRONMENTS.node
-            ? JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_NODE_ENVIRONMENT)
-            : environment === constants_1.JEST_ENVIRONMENTS.jsdom
-                ? JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_JSDOM_ENVIRONMENT)
-                : undefined;
-        const args = Helper.isYarnRepo() ? JEST_DEFAULT_ARGUMENTS : ['--', ...JEST_DEFAULT_ARGUMENTS];
-        yield (0, execute_test_1.runTests)(command, args);
+        try {
+            core.warning(command);
+            const commandPieces = CommandHelper.parseCommand(command);
+            const commandArgs = CommandHelper.getCommandPart(commandPieces);
+            const commandKeyword = commandArgs[commandArgs.length - 1];
+            const commandStr = yield PackageHelper.getScript(commandKeyword);
+            if (!commandStr || !commandStr.includes(constants_1.TEST_FRAMEWORKS.jest)) {
+                throw new Error('');
+            }
+            const parsedCommand = parseAndReplaceCommand(commandStr);
+            if (!parsedCommand) {
+                throw new Error('');
+            }
+            yield PackageHelper.updateFile('package.json', JSON.stringify(parsedCommand));
+            core.warning(JSON.stringify(yield PackageHelper.getPackageJson()));
+            yield (0, execute_test_1.runTests)(command);
+        }
+        catch (error) {
+            const thundraArgs = getThundraJestArgs();
+            const args = PackageHelper.isYarnRepo() ? thundraArgs : ['--', ...thundraArgs];
+            yield (0, execute_test_1.runTests)(command, args);
+        }
     });
 }
 exports.default = run;
@@ -233,11 +358,30 @@ exports.default = run;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.JEST_ENVIRONMENTS = exports.MIN_THUNDRA_AGENT_VERSION = void 0;
+exports.KNOWN_JEST_ARGUMENTS = exports.JEST_ENVIRONMENTS = exports.TEST_FRAMEWORKS = exports.MIN_THUNDRA_AGENT_VERSION = void 0;
 exports.MIN_THUNDRA_AGENT_VERSION = '2.13.0';
+exports.TEST_FRAMEWORKS = {
+    jest: 'jest'
+};
 exports.JEST_ENVIRONMENTS = {
     node: 'node',
     jsdom: 'jsdom'
+};
+exports.KNOWN_JEST_ARGUMENTS = {
+    env: {
+        value: '--env'
+    },
+    testRunner: {
+        value: '--testRunner'
+    },
+    maxWorkers: {
+        alias: '-w',
+        value: '--maxWorkers'
+    },
+    runInBand: {
+        alias: '-i',
+        value: '--runInBand'
+    }
 };
 
 
@@ -2448,6 +2592,258 @@ const forEachStep = (self, fn, node, thisp) => {
 }
 
 module.exports = LRUCache
+
+
+/***/ }),
+
+/***/ 5871:
+/***/ ((module) => {
+
+module.exports = function (args, opts) {
+    if (!opts) opts = {};
+    
+    var flags = { bools : {}, strings : {}, unknownFn: null };
+
+    if (typeof opts['unknown'] === 'function') {
+        flags.unknownFn = opts['unknown'];
+    }
+
+    if (typeof opts['boolean'] === 'boolean' && opts['boolean']) {
+      flags.allBools = true;
+    } else {
+      [].concat(opts['boolean']).filter(Boolean).forEach(function (key) {
+          flags.bools[key] = true;
+      });
+    }
+    
+    var aliases = {};
+    Object.keys(opts.alias || {}).forEach(function (key) {
+        aliases[key] = [].concat(opts.alias[key]);
+        aliases[key].forEach(function (x) {
+            aliases[x] = [key].concat(aliases[key].filter(function (y) {
+                return x !== y;
+            }));
+        });
+    });
+
+    [].concat(opts.string).filter(Boolean).forEach(function (key) {
+        flags.strings[key] = true;
+        if (aliases[key]) {
+            flags.strings[aliases[key]] = true;
+        }
+     });
+
+    var defaults = opts['default'] || {};
+    
+    var argv = { _ : [] };
+    Object.keys(flags.bools).forEach(function (key) {
+        setArg(key, defaults[key] === undefined ? false : defaults[key]);
+    });
+    
+    var notFlags = [];
+
+    if (args.indexOf('--') !== -1) {
+        notFlags = args.slice(args.indexOf('--')+1);
+        args = args.slice(0, args.indexOf('--'));
+    }
+
+    function argDefined(key, arg) {
+        return (flags.allBools && /^--[^=]+$/.test(arg)) ||
+            flags.strings[key] || flags.bools[key] || aliases[key];
+    }
+
+    function setArg (key, val, arg) {
+        if (arg && flags.unknownFn && !argDefined(key, arg)) {
+            if (flags.unknownFn(arg) === false) return;
+        }
+
+        var value = !flags.strings[key] && isNumber(val)
+            ? Number(val) : val
+        ;
+        setKey(argv, key.split('.'), value);
+        
+        (aliases[key] || []).forEach(function (x) {
+            setKey(argv, x.split('.'), value);
+        });
+    }
+
+    function setKey (obj, keys, value) {
+        var o = obj;
+        for (var i = 0; i < keys.length-1; i++) {
+            var key = keys[i];
+            if (key === '__proto__') return;
+            if (o[key] === undefined) o[key] = {};
+            if (o[key] === Object.prototype || o[key] === Number.prototype
+                || o[key] === String.prototype) o[key] = {};
+            if (o[key] === Array.prototype) o[key] = [];
+            o = o[key];
+        }
+
+        var key = keys[keys.length - 1];
+        if (key === '__proto__') return;
+        if (o === Object.prototype || o === Number.prototype
+            || o === String.prototype) o = {};
+        if (o === Array.prototype) o = [];
+        if (o[key] === undefined || flags.bools[key] || typeof o[key] === 'boolean') {
+            o[key] = value;
+        }
+        else if (Array.isArray(o[key])) {
+            o[key].push(value);
+        }
+        else {
+            o[key] = [ o[key], value ];
+        }
+    }
+    
+    function aliasIsBoolean(key) {
+      return aliases[key].some(function (x) {
+          return flags.bools[x];
+      });
+    }
+
+    for (var i = 0; i < args.length; i++) {
+        var arg = args[i];
+        
+        if (/^--.+=/.test(arg)) {
+            // Using [\s\S] instead of . because js doesn't support the
+            // 'dotall' regex modifier. See:
+            // http://stackoverflow.com/a/1068308/13216
+            var m = arg.match(/^--([^=]+)=([\s\S]*)$/);
+            var key = m[1];
+            var value = m[2];
+            if (flags.bools[key]) {
+                value = value !== 'false';
+            }
+            setArg(key, value, arg);
+        }
+        else if (/^--no-.+/.test(arg)) {
+            var key = arg.match(/^--no-(.+)/)[1];
+            setArg(key, false, arg);
+        }
+        else if (/^--.+/.test(arg)) {
+            var key = arg.match(/^--(.+)/)[1];
+            var next = args[i + 1];
+            if (next !== undefined && !/^-/.test(next)
+            && !flags.bools[key]
+            && !flags.allBools
+            && (aliases[key] ? !aliasIsBoolean(key) : true)) {
+                setArg(key, next, arg);
+                i++;
+            }
+            else if (/^(true|false)$/.test(next)) {
+                setArg(key, next === 'true', arg);
+                i++;
+            }
+            else {
+                setArg(key, flags.strings[key] ? '' : true, arg);
+            }
+        }
+        else if (/^-[^-]+/.test(arg)) {
+            var letters = arg.slice(1,-1).split('');
+            
+            var broken = false;
+            for (var j = 0; j < letters.length; j++) {
+                var next = arg.slice(j+2);
+                
+                if (next === '-') {
+                    setArg(letters[j], next, arg)
+                    continue;
+                }
+                
+                if (/[A-Za-z]/.test(letters[j]) && /=/.test(next)) {
+                    setArg(letters[j], next.split('=')[1], arg);
+                    broken = true;
+                    break;
+                }
+                
+                if (/[A-Za-z]/.test(letters[j])
+                && /-?\d+(\.\d*)?(e-?\d+)?$/.test(next)) {
+                    setArg(letters[j], next, arg);
+                    broken = true;
+                    break;
+                }
+                
+                if (letters[j+1] && letters[j+1].match(/\W/)) {
+                    setArg(letters[j], arg.slice(j+2), arg);
+                    broken = true;
+                    break;
+                }
+                else {
+                    setArg(letters[j], flags.strings[letters[j]] ? '' : true, arg);
+                }
+            }
+            
+            var key = arg.slice(-1)[0];
+            if (!broken && key !== '-') {
+                if (args[i+1] && !/^(-|--)[^-]/.test(args[i+1])
+                && !flags.bools[key]
+                && (aliases[key] ? !aliasIsBoolean(key) : true)) {
+                    setArg(key, args[i+1], arg);
+                    i++;
+                }
+                else if (args[i+1] && /^(true|false)$/.test(args[i+1])) {
+                    setArg(key, args[i+1] === 'true', arg);
+                    i++;
+                }
+                else {
+                    setArg(key, flags.strings[key] ? '' : true, arg);
+                }
+            }
+        }
+        else {
+            if (!flags.unknownFn || flags.unknownFn(arg) !== false) {
+                argv._.push(
+                    flags.strings['_'] || !isNumber(arg) ? arg : Number(arg)
+                );
+            }
+            if (opts.stopEarly) {
+                argv._.push.apply(argv._, args.slice(i + 1));
+                break;
+            }
+        }
+    }
+    
+    Object.keys(defaults).forEach(function (key) {
+        if (!hasKey(argv, key.split('.'))) {
+            setKey(argv, key.split('.'), defaults[key]);
+            
+            (aliases[key] || []).forEach(function (x) {
+                setKey(argv, x.split('.'), defaults[key]);
+            });
+        }
+    });
+    
+    if (opts['--']) {
+        argv['--'] = new Array();
+        notFlags.forEach(function(key) {
+            argv['--'].push(key);
+        });
+    }
+    else {
+        notFlags.forEach(function(key) {
+            argv._.push(key);
+        });
+    }
+
+    return argv;
+};
+
+function hasKey (obj, keys) {
+    var o = obj;
+    keys.slice(0,-1).forEach(function (key) {
+        o = (o[key] || {});
+    });
+
+    var key = keys[keys.length - 1];
+    return key in o;
+}
+
+function isNumber (x) {
+    if (typeof x === 'number') return true;
+    if (/^0x[0-9a-f]+$/i.test(x)) return true;
+    return /^[-+]?(?:\d+(?:\.\d*)?|\.\d+)(e[-+]?\d+)?$/.test(x);
+}
+
 
 
 /***/ }),
@@ -4716,6 +5112,212 @@ const validRange = (range, options) => {
   }
 }
 module.exports = validRange
+
+
+/***/ }),
+
+/***/ 7029:
+/***/ ((__unused_webpack_module, exports) => {
+
+exports.quote = function (xs) {
+    return xs.map(function (s) {
+        if (s && typeof s === 'object') {
+            return s.op.replace(/(.)/g, '\\$1');
+        }
+        else if (/["\s]/.test(s) && !/'/.test(s)) {
+            return "'" + s.replace(/(['\\])/g, '\\$1') + "'";
+        }
+        else if (/["'\s]/.test(s)) {
+            return '"' + s.replace(/(["\\$`!])/g, '\\$1') + '"';
+        }
+        else {
+            return String(s).replace(/([A-z]:)?([#!"$&'()*,:;<=>?@\[\\\]^`{|}])/g, '$1\\$2');
+        }
+    }).join(' ');
+};
+
+// '<(' is process substitution operator and
+// can be parsed the same as control operator
+var CONTROL = '(?:' + [
+    '\\|\\|', '\\&\\&', ';;', '\\|\\&', '\\<\\(', '>>', '>\\&', '[&;()|<>]'
+].join('|') + ')';
+var META = '|&;()<> \\t';
+var BAREWORD = '(\\\\[\'"' + META + ']|[^\\s\'"' + META + '])+';
+var SINGLE_QUOTE = '"((\\\\"|[^"])*?)"';
+var DOUBLE_QUOTE = '\'((\\\\\'|[^\'])*?)\'';
+
+var TOKEN = '';
+for (var i = 0; i < 4; i++) {
+    TOKEN += (Math.pow(16,8)*Math.random()).toString(16);
+}
+
+exports.parse = function (s, env, opts) {
+    var mapped = parse(s, env, opts);
+    if (typeof env !== 'function') return mapped;
+    return mapped.reduce(function (acc, s) {
+        if (typeof s === 'object') return acc.concat(s);
+        var xs = s.split(RegExp('(' + TOKEN + '.*?' + TOKEN + ')', 'g'));
+        if (xs.length === 1) return acc.concat(xs[0]);
+        return acc.concat(xs.filter(Boolean).map(function (x) {
+            if (RegExp('^' + TOKEN).test(x)) {
+                return JSON.parse(x.split(TOKEN)[1]);
+            }
+            else return x;
+        }));
+    }, []);
+};
+
+function parse (s, env, opts) {
+    var chunker = new RegExp([
+        '(' + CONTROL + ')', // control chars
+        '(' + BAREWORD + '|' + SINGLE_QUOTE + '|' + DOUBLE_QUOTE + ')*'
+    ].join('|'), 'g');
+    var match = s.match(chunker).filter(Boolean);
+    var commented = false;
+
+    if (!match) return [];
+    if (!env) env = {};
+    if (!opts) opts = {};
+    return match.map(function (s, j) {
+        if (commented) {
+            return;
+        }
+        if (RegExp('^' + CONTROL + '$').test(s)) {
+            return { op: s };
+        }
+
+        // Hand-written scanner/parser for Bash quoting rules:
+        //
+        //  1. inside single quotes, all characters are printed literally.
+        //  2. inside double quotes, all characters are printed literally
+        //     except variables prefixed by '$' and backslashes followed by
+        //     either a double quote or another backslash.
+        //  3. outside of any quotes, backslashes are treated as escape
+        //     characters and not printed (unless they are themselves escaped)
+        //  4. quote context can switch mid-token if there is no whitespace
+        //     between the two quote contexts (e.g. all'one'"token" parses as
+        //     "allonetoken")
+        var SQ = "'";
+        var DQ = '"';
+        var DS = '$';
+        var BS = opts.escape || '\\';
+        var quote = false;
+        var esc = false;
+        var out = '';
+        var isGlob = false;
+
+        for (var i = 0, len = s.length; i < len; i++) {
+            var c = s.charAt(i);
+            isGlob = isGlob || (!quote && (c === '*' || c === '?'));
+            if (esc) {
+                out += c;
+                esc = false;
+            }
+            else if (quote) {
+                if (c === quote) {
+                    quote = false;
+                }
+                else if (quote == SQ) {
+                    out += c;
+                }
+                else { // Double quote
+                    if (c === BS) {
+                        i += 1;
+                        c = s.charAt(i);
+                        if (c === DQ || c === BS || c === DS) {
+                            out += c;
+                        } else {
+                            out += BS + c;
+                        }
+                    }
+                    else if (c === DS) {
+                        out += parseEnvVar();
+                    }
+                    else {
+                        out += c;
+                    }
+                }
+            }
+            else if (c === DQ || c === SQ) {
+                quote = c;
+            }
+            else if (RegExp('^' + CONTROL + '$').test(c)) {
+                return { op: s };
+            }
+            else if (RegExp('^#$').test(c)) {
+                commented = true;
+                if (out.length){
+                    return [out, { comment: s.slice(i+1) + match.slice(j+1).join(' ') }];
+                }
+                return [{ comment: s.slice(i+1) + match.slice(j+1).join(' ') }];
+            }
+            else if (c === BS) {
+                esc = true;
+            }
+            else if (c === DS) {
+                out += parseEnvVar();
+            }
+            else out += c;
+        }
+
+        if (isGlob) return {op: 'glob', pattern: out};
+
+        return out;
+
+        function parseEnvVar() {
+            i += 1;
+            var varend, varname;
+            //debugger
+            if (s.charAt(i) === '{') {
+                i += 1;
+                if (s.charAt(i) === '}') {
+                    throw new Error("Bad substitution: " + s.substr(i - 2, 3));
+                }
+                varend = s.indexOf('}', i);
+                if (varend < 0) {
+                    throw new Error("Bad substitution: " + s.substr(i));
+                }
+                varname = s.substr(i, varend - i);
+                i = varend;
+            }
+            else if (/[*@#?$!_\-]/.test(s.charAt(i))) {
+                varname = s.charAt(i);
+                i += 1;
+            }
+            else {
+                varend = s.substr(i).match(/[^\w\d_]/);
+                if (!varend) {
+                    varname = s.substr(i);
+                    i = s.length;
+                } else {
+                    varname = s.substr(i, varend.index);
+                    i += varend.index - 1;
+                }
+            }
+            return getVar(null, '', varname);
+        }
+    })
+    // finalize parsed aruments
+    .reduce(function(prev, arg){
+        if (arg === undefined){
+            return prev;
+        }
+        return prev.concat(arg);
+    },[]);
+
+    function getVar (_, pre, key) {
+        var r = typeof env === 'function' ? env(key) : env[key];
+        if (r === undefined && key != '')
+            r = '';
+        else if (r === undefined)
+            r = '$';
+
+        if (typeof r === 'object') {
+            return pre + TOKEN + JSON.stringify(r) + TOKEN;
+        }
+        else return pre + r;
+    }
+}
 
 
 /***/ }),
