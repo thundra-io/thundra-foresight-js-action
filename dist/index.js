@@ -120,7 +120,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.updateFile = exports.isYarnRepo = exports.createYarnAddCommand = exports.createNpmInstallCommand = exports.getDependencyVersion = exports.setScript = exports.getScript = exports.getPackageJson = void 0;
+exports.updateFile = exports.isYarnRepo = exports.createYarnAddCommand = exports.createNpmInstallCommand = exports.getDependencyVersion = exports.updateScript = exports.getScript = exports.getPackageJson = exports.packagePath = void 0;
 const core = __importStar(__webpack_require__(2186));
 const fs_1 = __importDefault(__webpack_require__(5747));
 const path_1 = __importDefault(__webpack_require__(5622));
@@ -132,31 +132,32 @@ if (!workspace) {
     process.exit(core.ExitCode.Success);
 }
 const dir = path_1.default.resolve(workspace);
-const packagePath = path_1.default.join(dir, 'package.json');
+exports.packagePath = path_1.default.join(dir, 'package.json');
 function getPackageJson() {
     return __awaiter(this, void 0, void 0, function* () {
-        return yield Promise.resolve().then(() => __importStar(require(packagePath)));
+        return (yield Promise.resolve().then(() => __importStar(require(exports.packagePath)))).default;
     });
 }
 exports.getPackageJson = getPackageJson;
 function getScript(scriptName) {
     return __awaiter(this, void 0, void 0, function* () {
         const packageJson = yield getPackageJson();
-        if (packageJson.script && packageJson.script[scriptName]) {
-            return packageJson.script[scriptName];
+        if (packageJson.scripts && packageJson.scripts[scriptName]) {
+            return packageJson.scripts[scriptName];
         }
     });
 }
 exports.getScript = getScript;
-function setScript(scriptName, scriptValue) {
+function updateScript(scriptName, scriptValue) {
     return __awaiter(this, void 0, void 0, function* () {
         const packageJson = yield getPackageJson();
-        if (packageJson.script && packageJson.script[scriptName]) {
-            packageJson.script[scriptName] = scriptValue;
+        if (packageJson.scripts && packageJson.scripts[scriptName]) {
+            packageJson.scripts[scriptName] = `${scriptValue}`;
         }
+        return packageJson;
     });
 }
-exports.setScript = setScript;
+exports.updateScript = updateScript;
 function getDependencyVersion(dependency) {
     return __awaiter(this, void 0, void 0, function* () {
         const packageJson = yield getPackageJson();
@@ -306,7 +307,7 @@ function parseAndReplaceCommand(commandStr) {
         newCommandPieces.push(...JEST_WORKER_ARGUMENTS);
     }
     newCommandPieces.push(...getThundraJestArgs());
-    return command.replace(willBeReplaced, newCommandPieces.join(' '));
+    return commandStr.replace(willBeReplaced, newCommandPieces.join(' '));
 }
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -324,20 +325,19 @@ function run() {
             yield exec.exec(jestCircusInstallCmd, [], { ignoreReturnCode: true });
         }
         try {
-            core.warning(command);
             const commandPieces = CommandHelper.parseCommand(command);
             const commandArgs = CommandHelper.getCommandPart(commandPieces);
             const commandKeyword = commandArgs[commandArgs.length - 1];
             const commandStr = yield PackageHelper.getScript(commandKeyword);
             if (!commandStr || !commandStr.includes(constants_1.TEST_FRAMEWORKS.jest)) {
-                throw new Error('');
+                throw new Error('commandStr can not be empty.');
             }
             const parsedCommand = parseAndReplaceCommand(commandStr);
             if (!parsedCommand) {
-                throw new Error('');
+                throw new Error('parsedCommand can not be empty.');
             }
-            yield PackageHelper.updateFile('package.json', JSON.stringify(parsedCommand));
-            core.warning(JSON.stringify(yield PackageHelper.getPackageJson()));
+            const updatedPckJson = yield PackageHelper.updateScript(commandKeyword, parsedCommand);
+            yield PackageHelper.updateFile(PackageHelper.packagePath, JSON.stringify(updatedPckJson));
             yield (0, execute_test_1.runTests)(command);
         }
         catch (error) {

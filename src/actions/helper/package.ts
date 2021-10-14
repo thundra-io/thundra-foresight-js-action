@@ -22,24 +22,26 @@ if (!workspace) {
 
 const dir = Path.resolve(workspace)
 
-const packagePath = Path.join(dir, 'package.json')
+export const packagePath = Path.join(dir, 'package.json')
 
 export async function getPackageJson(): Promise<any> {
-    return await import(packagePath)
+    return (await import(packagePath)).default
 }
 
 export async function getScript(scriptName: string): Promise<string | void> {
     const packageJson = await getPackageJson()
-    if (packageJson.script && packageJson.script[scriptName]) {
-        return packageJson.script[scriptName]
+    if (packageJson.scripts && packageJson.scripts[scriptName]) {
+        return packageJson.scripts[scriptName]
     }
 }
 
-export async function setScript(scriptName: string, scriptValue: string): Promise<void> {
+export async function updateScript(scriptName: string, scriptValue: string): Promise<any> {
     const packageJson = await getPackageJson()
-    if (packageJson.script && packageJson.script[scriptName]) {
-        packageJson.script[scriptName] = scriptValue
+    if (packageJson.scripts && packageJson.scripts[scriptName]) {
+        packageJson.scripts[scriptName] = `${scriptValue}`
     }
+
+    return packageJson
 }
 
 export async function getDependencyVersion(dependency: string): Promise<string> {

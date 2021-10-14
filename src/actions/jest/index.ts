@@ -85,7 +85,7 @@ function parseAndReplaceCommand(commandStr: string): string | undefined {
 
     newCommandPieces.push(...getThundraJestArgs())
 
-    return command.replace(willBeReplaced, newCommandPieces.join(' '))
+    return commandStr.replace(willBeReplaced, newCommandPieces.join(' '))
 }
 
 export default async function run(): Promise<void> {
@@ -108,25 +108,23 @@ export default async function run(): Promise<void> {
     }
 
     try {
-        core.warning(command)
         const commandPieces = CommandHelper.parseCommand(command)
         const commandArgs = CommandHelper.getCommandPart(commandPieces)
         const commandKeyword = commandArgs[commandArgs.length - 1]
 
         const commandStr = await PackageHelper.getScript(commandKeyword)
-
         if (!commandStr || !commandStr.includes(TEST_FRAMEWORKS.jest)) {
-            throw new Error('')
+            throw new Error('commandStr can not be empty.')
         }
 
         const parsedCommand = parseAndReplaceCommand(commandStr)
         if (!parsedCommand) {
-            throw new Error('')
+            throw new Error('parsedCommand can not be empty.')
         }
 
-        await PackageHelper.updateFile('package.json', JSON.stringify(parsedCommand))
+        const updatedPckJson = await PackageHelper.updateScript(commandKeyword, parsedCommand)
 
-        core.warning(JSON.stringify(await PackageHelper.getPackageJson()))
+        await PackageHelper.updateFile(PackageHelper.packagePath, JSON.stringify(updatedPckJson))
 
         await runTests(command)
     } catch (error) {
