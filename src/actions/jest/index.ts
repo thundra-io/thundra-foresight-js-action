@@ -23,16 +23,7 @@ const JEST_WORKER_ARGUMENTS = ['--maxWorkers=50%']
 
 const environment: string = core.getInput('environment')
 const command: string = core.getInput('command')
-
-function getThundraJestArgs(): string[] {
-    environment === JEST_ENVIRONMENTS.node
-        ? JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_NODE_ENVIRONMENT)
-        : environment === JEST_ENVIRONMENTS.jsdom
-        ? JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_JSDOM_ENVIRONMENT)
-        : JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_DEFAULT_ENVIRONMENT)
-
-    return JEST_DEFAULT_ARGUMENTS
-}
+const appendThundraArguments: string = core.getInput('append_thundra_arguments')
 
 function parseAndReplaceCommand(commandStr: string): string | undefined {
     const parsedCommand = CommandHelper.parseCommand(commandStr)
@@ -80,10 +71,10 @@ function parseAndReplaceCommand(commandStr: string): string | undefined {
     const willBeReplaced = orginalCommandPieces.join(' ')
 
     if (addWorkerFlag) {
-        newCommandPieces.push(...JEST_WORKER_ARGUMENTS)
+        JEST_DEFAULT_ARGUMENTS.push(...JEST_WORKER_ARGUMENTS)
     }
 
-    newCommandPieces.push(...getThundraJestArgs())
+    newCommandPieces.push(...JEST_DEFAULT_ARGUMENTS)
 
     return commandStr.replace(willBeReplaced, newCommandPieces.join(' '))
 }
@@ -107,30 +98,50 @@ export default async function run(): Promise<void> {
         await exec.exec(jestCircusInstallCmd, [], { ignoreReturnCode: true })
     }
 
-    try {
-        const commandPieces = CommandHelper.parseCommand(command)
-        const commandArgs = CommandHelper.getCommandPart(commandPieces)
-        const commandKeyword = commandArgs[commandArgs.length - 1]
+    environment === JEST_ENVIRONMENTS.node
+        ? JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_NODE_ENVIRONMENT)
+        : environment === JEST_ENVIRONMENTS.jsdom
+        ? JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_JSDOM_ENVIRONMENT)
+        : JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_DEFAULT_ENVIRONMENT)
 
-        const commandStr = await PackageHelper.getScript(commandKeyword)
-        if (!commandStr || !commandStr.includes(TEST_FRAMEWORKS.jest)) {
-            throw new Error('commandStr can not be empty.')
+    process.env['THUNDRA_JEST_ARGUMENTS'] = JEST_DEFAULT_ARGUMENTS.join(' ')
+
+    const commandPieces = CommandHelper.parseCommand(command)
+    const commandArgs = CommandHelper.getCommandPart(commandPieces)
+    const commandKeyword = commandArgs[commandArgs.length - 1]
+
+    const commandStr = await PackageHelper.getScript(commandKeyword)
+    if (!commandStr) {
+        core.warning(`Script ${commandKeyword} did not found !`)
+
+        process.exit(core.ExitCode.Success)
+    }
+
+    const isScriptIncludesJest = commandStr.includes(TEST_FRAMEWORKS.jest)
+
+    if (appendThundraArguments && isScriptIncludesJest) {
+        try {
+            const parsedCommand = parseAndReplaceCommand(commandStr)
+            if (!parsedCommand) {
+                throw new Error('')
+            }
+
+            const updatedPckJson = await PackageHelper.updateScript(commandKeyword, parsedCommand)
+
+            await PackageHelper.updateFile(PackageHelper.packagePath, JSON.stringify(updatedPckJson))
+
+            process.env['THUNDRA_JEST_ARGUMENTS'] = JEST_DEFAULT_ARGUMENTS.join(' ')
+
+            await runTests(command)
+        } catch (error) {
+            const args = PackageHelper.isYarnRepo() ? JEST_DEFAULT_ARGUMENTS : ['--', ...JEST_DEFAULT_ARGUMENTS]
+
+            await runTests(command, args)
         }
-
-        const parsedCommand = parseAndReplaceCommand(commandStr)
-        if (!parsedCommand) {
-            throw new Error('parsedCommand can not be empty.')
-        }
-
-        const updatedPckJson = await PackageHelper.updateScript(commandKeyword, parsedCommand)
-
-        await PackageHelper.updateFile(PackageHelper.packagePath, JSON.stringify(updatedPckJson))
+    } else {
+        core.warning(`Thundra jest arguments did not appended to command. 
+            Environment variable "THUNDRA_JEST_ARGUMENTS" must be added to command manually`)
 
         await runTests(command)
-    } catch (error) {
-        const thundraArgs = getThundraJestArgs()
-        const args = PackageHelper.isYarnRepo() ? thundraArgs : ['--', ...thundraArgs]
-
-        await runTests(command, args)
     }
 }

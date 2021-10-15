@@ -265,14 +265,7 @@ const JEST_DEFAULT_ARGUMENTS = ['--testRunner=jest-circus/runner'];
 const JEST_WORKER_ARGUMENTS = ['--maxWorkers=50%'];
 const environment = core.getInput('environment');
 const command = core.getInput('command');
-function getThundraJestArgs() {
-    environment === constants_1.JEST_ENVIRONMENTS.node
-        ? JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_NODE_ENVIRONMENT)
-        : environment === constants_1.JEST_ENVIRONMENTS.jsdom
-            ? JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_JSDOM_ENVIRONMENT)
-            : JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_DEFAULT_ENVIRONMENT);
-    return JEST_DEFAULT_ARGUMENTS;
-}
+const appendThundraArguments = core.getInput('append_thundra_arguments');
 function parseAndReplaceCommand(commandStr) {
     const parsedCommand = CommandHelper.parseCommand(commandStr);
     const hasOperator = parsedCommand.some(x => typeof x === 'object' && x.op);
@@ -304,9 +297,9 @@ function parseAndReplaceCommand(commandStr) {
     }
     const willBeReplaced = orginalCommandPieces.join(' ');
     if (addWorkerFlag) {
-        newCommandPieces.push(...JEST_WORKER_ARGUMENTS);
+        JEST_DEFAULT_ARGUMENTS.push(...JEST_WORKER_ARGUMENTS);
     }
-    newCommandPieces.push(...getThundraJestArgs());
+    newCommandPieces.push(...JEST_DEFAULT_ARGUMENTS);
     return commandStr.replace(willBeReplaced, newCommandPieces.join(' '));
 }
 function run() {
@@ -324,26 +317,41 @@ function run() {
                 : PackageHelper.createNpmInstallCommand(`jest-circus@${jestVersion}`);
             yield exec.exec(jestCircusInstallCmd, [], { ignoreReturnCode: true });
         }
-        try {
-            const commandPieces = CommandHelper.parseCommand(command);
-            const commandArgs = CommandHelper.getCommandPart(commandPieces);
-            const commandKeyword = commandArgs[commandArgs.length - 1];
-            const commandStr = yield PackageHelper.getScript(commandKeyword);
-            if (!commandStr || !commandStr.includes(constants_1.TEST_FRAMEWORKS.jest)) {
-                throw new Error('commandStr can not be empty.');
-            }
-            const parsedCommand = parseAndReplaceCommand(commandStr);
-            if (!parsedCommand) {
-                throw new Error('parsedCommand can not be empty.');
-            }
-            const updatedPckJson = yield PackageHelper.updateScript(commandKeyword, parsedCommand);
-            yield PackageHelper.updateFile(PackageHelper.packagePath, JSON.stringify(updatedPckJson));
-            yield (0, execute_test_1.runTests)(command);
+        environment === constants_1.JEST_ENVIRONMENTS.node
+            ? JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_NODE_ENVIRONMENT)
+            : environment === constants_1.JEST_ENVIRONMENTS.jsdom
+                ? JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_JSDOM_ENVIRONMENT)
+                : JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_DEFAULT_ENVIRONMENT);
+        process.env['THUNDRA_JEST_ARGUMENTS'] = JEST_DEFAULT_ARGUMENTS.join(' ');
+        const commandPieces = CommandHelper.parseCommand(command);
+        const commandArgs = CommandHelper.getCommandPart(commandPieces);
+        const commandKeyword = commandArgs[commandArgs.length - 1];
+        const commandStr = yield PackageHelper.getScript(commandKeyword);
+        if (!commandStr) {
+            core.warning(`Script ${commandKeyword} did not found !`);
+            process.exit(core.ExitCode.Success);
         }
-        catch (error) {
-            const thundraArgs = getThundraJestArgs();
-            const args = PackageHelper.isYarnRepo() ? thundraArgs : ['--', ...thundraArgs];
-            yield (0, execute_test_1.runTests)(command, args);
+        const isScriptIncludesJest = commandStr.includes(constants_1.TEST_FRAMEWORKS.jest);
+        if (appendThundraArguments && isScriptIncludesJest) {
+            try {
+                const parsedCommand = parseAndReplaceCommand(commandStr);
+                if (!parsedCommand) {
+                    throw new Error('');
+                }
+                const updatedPckJson = yield PackageHelper.updateScript(commandKeyword, parsedCommand);
+                yield PackageHelper.updateFile(PackageHelper.packagePath, JSON.stringify(updatedPckJson));
+                process.env['THUNDRA_JEST_ARGUMENTS'] = JEST_DEFAULT_ARGUMENTS.join(' ');
+                yield (0, execute_test_1.runTests)(command);
+            }
+            catch (error) {
+                const args = PackageHelper.isYarnRepo() ? JEST_DEFAULT_ARGUMENTS : ['--', ...JEST_DEFAULT_ARGUMENTS];
+                yield (0, execute_test_1.runTests)(command, args);
+            }
+        }
+        else {
+            core.warning(`Thundra jest arguments did not appended to command. 
+            Environment variable "THUNDRA_JEST_ARGUMENTS" must be added to command manually`);
+            yield (0, execute_test_1.runTests)(command);
         }
     });
 }
