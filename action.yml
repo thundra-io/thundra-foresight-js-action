@@ -19,6 +19,10 @@ inputs:
     required: false
     description: "Command to run your tests"
     default: "npm test"
+  append_thundra_arguments:
+    required: false
+    description: "Append Thundra arguments to command"
+    default: true
   agent_version:
     required: false
     description: "Use a specific version of the Thundra Agent"
