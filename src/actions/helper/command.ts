@@ -4,8 +4,6 @@ import Minimist from 'minimist'
 
 import ShellQuote from 'shell-quote'
 
-// import { getScript } from './package'
-
 export function parseCommand(command: string): any[] {
     return ShellQuote.parse(command)
 }

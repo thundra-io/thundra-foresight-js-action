@@ -18,27 +18,27 @@ const agent_version: string = core.getInput('agent_version')
 const thundraDep = agent_version ? `@thundra/core@${agent_version}` : '@thundra/core'
 
 if (!apikey) {
-    core.warning('Thundra API Key is not present. Exiting early...')
-    core.warning('Instrumentation failed.')
+    core.warning('[Thundra] Thundra API Key is not present. Exiting early...')
+    core.warning('[Thundra] Instrumentation failed.')
 
     process.exit(core.ExitCode.Success)
 }
 
 if (!project_id) {
-    core.warning('Thundra Project ID is not present. Exiting early...')
-    core.warning('Instrumentation failed.')
+    core.warning('[Thundra] Thundra Project ID is not present. Exiting early...')
+    core.warning('[Thundra] Instrumentation failed.')
 
     process.exit(core.ExitCode.Success)
 }
 
 if (agent_version && semver.lt(agent_version, MIN_THUNDRA_AGENT_VERSION)) {
-    core.setFailed(`Thundra Nodejs Agent prior to ${MIN_THUNDRA_AGENT_VERSION} doesn't work with this action`)
+    core.setFailed(`[Thundra] Thundra Nodejs Agent prior to ${MIN_THUNDRA_AGENT_VERSION} doesn't work with this action`)
 
     process.exit(core.ExitCode.Success)
 }
 
 if (!actions.isValidFramework(framework) || !actions.isValidFramework(framework.toLowerCase())) {
-    core.warning('Framework must be take one of these values: jest...')
+    core.warning('[Thundra] Framework must be take one of these values: jest...')
 
     process.exit(core.ExitCode.Success)
 }
@@ -60,7 +60,7 @@ async function run(): Promise<void> {
 
         const action: Function | undefined = actions.getAction(framework)
         if (!action) {
-            core.warning(`There is no defined action for framework: ${framework}`)
+            core.warning(`[Thundra] There is no defined action for framework: ${framework}`)
 
             process.exit(core.ExitCode.Success)
         }

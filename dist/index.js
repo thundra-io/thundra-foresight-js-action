@@ -15,7 +15,6 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getCommandPart = exports.minimistArgs = exports.parseCommand = void 0;
 const minimist_1 = __importDefault(__webpack_require__(5871));
 const shell_quote_1 = __importDefault(__webpack_require__(7029));
-// import { getScript } from './package'
 function parseCommand(command) {
     return shell_quote_1.default.parse(command);
 }
@@ -87,7 +86,6 @@ exports.runTests = runTests;
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable sort-imports */
-/* eslint-disable i18n-text/no-en */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
@@ -128,7 +126,7 @@ const util_1 = __importDefault(__webpack_require__(1669));
 const WriteFile = util_1.default.promisify(fs_1.default.writeFile);
 const workspace = process.env.GITHUB_WORKSPACE;
 if (!workspace) {
-    core.warning('There is no defined workspace');
+    core.warning('[Thundra] There is no defined workspace');
     process.exit(core.ExitCode.Success);
 }
 const dir = path_1.default.resolve(workspace);
@@ -307,7 +305,7 @@ function run() {
         core.info(`[Thundra] Jest will run test for environment ${environment}...`);
         const jestVersion = yield PackageHelper.getDependencyVersion('jest');
         if (!jestVersion) {
-            core.warning(`Jest must be added in project`);
+            core.warning(`[Thundra] Jest must be added in project`);
             process.exit(core.ExitCode.Success);
         }
         const jestCircusVersion = yield PackageHelper.getDependencyVersion('jest-circus');
@@ -328,28 +326,25 @@ function run() {
         const commandKeyword = commandArgs[commandArgs.length - 1];
         const commandStr = yield PackageHelper.getScript(commandKeyword);
         if (!commandStr) {
-            core.warning(`Script ${commandKeyword} did not found !`);
+            core.warning(`[Thundra] Script ${commandKeyword} did not found !`);
             process.exit(core.ExitCode.Success);
         }
         const isScriptIncludesJest = commandStr.includes(constants_1.TEST_FRAMEWORKS.jest);
         if (appendThundraArguments && isScriptIncludesJest) {
-            try {
-                const parsedCommand = parseAndReplaceCommand(commandStr);
-                if (!parsedCommand) {
-                    throw new Error('');
-                }
+            const parsedCommand = parseAndReplaceCommand(commandStr);
+            if (parsedCommand) {
                 const updatedPckJson = yield PackageHelper.updateScript(commandKeyword, parsedCommand);
                 yield PackageHelper.updateFile(PackageHelper.packagePath, JSON.stringify(updatedPckJson));
                 process.env['THUNDRA_JEST_ARGUMENTS'] = JEST_DEFAULT_ARGUMENTS.join(' ');
                 yield (0, execute_test_1.runTests)(command);
             }
-            catch (error) {
+            else {
                 const args = PackageHelper.isYarnRepo() ? JEST_DEFAULT_ARGUMENTS : ['--', ...JEST_DEFAULT_ARGUMENTS];
                 yield (0, execute_test_1.runTests)(command, args);
             }
         }
         else {
-            core.warning(`Thundra jest arguments did not appended to command. 
+            core.warning(`[Thundra] Thundra jest arguments did not appended to command. 
             Environment variable "THUNDRA_JEST_ARGUMENTS" must be added to command manually`);
             yield (0, execute_test_1.runTests)(command);
         }
@@ -443,21 +438,21 @@ const framework = core.getInput('framework');
 const agent_version = core.getInput('agent_version');
 const thundraDep = agent_version ? `@thundra/core@${agent_version}` : '@thundra/core';
 if (!apikey) {
-    core.warning('Thundra API Key is not present. Exiting early...');
-    core.warning('Instrumentation failed.');
+    core.warning('[Thundra] Thundra API Key is not present. Exiting early...');
+    core.warning('[Thundra] Instrumentation failed.');
     process.exit(core.ExitCode.Success);
 }
 if (!project_id) {
-    core.warning('Thundra Project ID is not present. Exiting early...');
-    core.warning('Instrumentation failed.');
+    core.warning('[Thundra] Thundra Project ID is not present. Exiting early...');
+    core.warning('[Thundra] Instrumentation failed.');
     process.exit(core.ExitCode.Success);
 }
 if (agent_version && semver.lt(agent_version, constants_1.MIN_THUNDRA_AGENT_VERSION)) {
-    core.setFailed(`Thundra Nodejs Agent prior to ${constants_1.MIN_THUNDRA_AGENT_VERSION} doesn't work with this action`);
+    core.setFailed(`[Thundra] Thundra Nodejs Agent prior to ${constants_1.MIN_THUNDRA_AGENT_VERSION} doesn't work with this action`);
     process.exit(core.ExitCode.Success);
 }
 if (!actions.isValidFramework(framework) || !actions.isValidFramework(framework.toLowerCase())) {
-    core.warning('Framework must be take one of these values: jest...');
+    core.warning('[Thundra] Framework must be take one of these values: jest...');
     process.exit(core.ExitCode.Success);
 }
 core.exportVariable('THUNDRA_APIKEY', apikey);
@@ -473,7 +468,7 @@ function run() {
             core.info(`[Thundra] @thundra/core installed`);
             const action = actions.getAction(framework);
             if (!action) {
-                core.warning(`There is no defined action for framework: ${framework}`);
+                core.warning(`[Thundra] There is no defined action for framework: ${framework}`);
                 process.exit(core.ExitCode.Success);
             }
             yield action();

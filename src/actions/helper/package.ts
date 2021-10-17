@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable sort-imports */
-/* eslint-disable i18n-text/no-en */
 
 import * as core from '@actions/core'
 
@@ -15,7 +14,7 @@ const WriteFile = Util.promisify(fs.writeFile)
 const workspace = process.env.GITHUB_WORKSPACE
 
 if (!workspace) {
-    core.warning('There is no defined workspace')
+    core.warning('[Thundra] There is no defined workspace')
 
     process.exit(core.ExitCode.Success)
 }

@@ -84,7 +84,7 @@ export default async function run(): Promise<void> {
 
     const jestVersion = await PackageHelper.getDependencyVersion('jest')
     if (!jestVersion) {
-        core.warning(`Jest must be added in project`)
+        core.warning(`[Thundra] Jest must be added in project`)
 
         process.exit(core.ExitCode.Success)
     }
@@ -112,7 +112,7 @@ export default async function run(): Promise<void> {
 
     const commandStr = await PackageHelper.getScript(commandKeyword)
     if (!commandStr) {
-        core.warning(`Script ${commandKeyword} did not found !`)
+        core.warning(`[Thundra] Script ${commandKeyword} did not found !`)
 
         process.exit(core.ExitCode.Success)
     }
@@ -120,12 +120,8 @@ export default async function run(): Promise<void> {
     const isScriptIncludesJest = commandStr.includes(TEST_FRAMEWORKS.jest)
 
     if (appendThundraArguments && isScriptIncludesJest) {
-        try {
-            const parsedCommand = parseAndReplaceCommand(commandStr)
-            if (!parsedCommand) {
-                throw new Error('')
-            }
-
+        const parsedCommand = parseAndReplaceCommand(commandStr)
+        if (parsedCommand) {
             const updatedPckJson = await PackageHelper.updateScript(commandKeyword, parsedCommand)
 
             await PackageHelper.updateFile(PackageHelper.packagePath, JSON.stringify(updatedPckJson))
@@ -133,13 +129,13 @@ export default async function run(): Promise<void> {
             process.env['THUNDRA_JEST_ARGUMENTS'] = JEST_DEFAULT_ARGUMENTS.join(' ')
 
             await runTests(command)
-        } catch (error) {
+        } else {
             const args = PackageHelper.isYarnRepo() ? JEST_DEFAULT_ARGUMENTS : ['--', ...JEST_DEFAULT_ARGUMENTS]
 
             await runTests(command, args)
         }
     } else {
-        core.warning(`Thundra jest arguments did not appended to command. 
+        core.warning(`[Thundra] Thundra jest arguments did not appended to command. 
             Environment variable "THUNDRA_JEST_ARGUMENTS" must be added to command manually`)
 
         await runTests(command)
