@@ -362,7 +362,7 @@ exports.default = run;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.KNOWN_JEST_ARGUMENTS = exports.JEST_ENVIRONMENTS = exports.TEST_FRAMEWORKS = exports.MIN_THUNDRA_AGENT_VERSION = void 0;
-exports.MIN_THUNDRA_AGENT_VERSION = '2.13.0';
+exports.MIN_THUNDRA_AGENT_VERSION = '2.13.1';
 exports.TEST_FRAMEWORKS = {
     jest: 'jest'
 };

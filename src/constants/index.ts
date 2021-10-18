@@ -1,4 +1,4 @@
-export const MIN_THUNDRA_AGENT_VERSION = '2.13.0'
+export const MIN_THUNDRA_AGENT_VERSION = '2.13.1'
 
 export const TEST_FRAMEWORKS = {
     jest: 'jest'
