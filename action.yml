@@ -1,0 +1,34 @@
+name: "Thundra Foresight JS Action"
+description: "Thundra Foresight JS Action"
+author: "bcaglayan <batuhan@thundra.io>"
+inputs:
+  apikey:
+    required: false
+    description: "Thundra's API Key"
+  project_id:
+    required: false
+    description: "Thundra's Test Project ID"
+  framework:
+    required: false
+    description: "Framework to run your tests"
+    default: "jest"
+  environment:
+    required: false
+    description: "Environment to run your tests"
+  command:
+    required: false
+    description: "Command to run your tests"
+    default: "npm test"
+  append_thundra_arguments:
+    required: false
+    description: "Append Thundra arguments to command"
+    default: true
+  agent_version:
+    required: false
+    description: "Use a specific version of the Thundra Agent"
+runs:
+  using: "node12"
+  main: "dist/index.js"
+branding:
+  icon: "cloud-lightning"
+  color: "yellow"

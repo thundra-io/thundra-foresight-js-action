@@ -1,0 +1,48 @@
+{
+  "name": "thundra-foresight-js-action",
+  "version": "0.0.1",
+  "description": "Thundra Foresight JS Action",
+  "main": "lib/main.js",
+  "scripts": {
+    "build": "tsc",
+    "format": "prettier --write **/*.ts",
+    "format-check": "prettier --check **/*.ts",
+    "lint": "eslint src/**/*.ts",
+    "package": "ncc build --source-map --license licenses.txt",
+    "all": "npm install && npm run build && npm run format && npm run lint && npm run package"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thundra-io/thundra-foresight-js-action.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/thundra-io/thundra-foresight-js-action/issues"
+  },
+  "homepage": "https://github.com/thundra-io/thundra-foresight-js-action#readme",
+  "dependencies": {
+    "@actions/core": "^1.2.6",
+    "@actions/exec": "^1.0.4",
+    "@actions/github": "^5.0.0",
+    "@actions/io": "^1.1.0",
+    "@actions/tool-cache": "^1.6.1",
+    "@types/minimist": "^1.2.2",
+    "@types/semver": "^7.3.5",
+    "@types/shell-quote": "^1.7.1",
+    "minimist": "^1.2.5",
+    "semver": "^7.3.5",
+    "shell-quote": "^1.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^14.14.9",
+    "@typescript-eslint/parser": "^4.8.1",
+    "@vercel/ncc": "^0.25.1",
+    "eslint": "^7.17.0",
+    "eslint-plugin-github": "^4.1.1",
+    "js-yaml": "^3.14.0",
+    "prettier": "2.2.1",
+    "typescript": "^4.1.3"
+  }
+}
