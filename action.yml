@@ -18,7 +18,6 @@ inputs:
   command:
     required: false
     description: "Command to run your tests"
-    default: "npm test"
   append_thundra_arguments:
     required: false
     description: "Append Thundra arguments to command"

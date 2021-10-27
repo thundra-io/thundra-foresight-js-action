@@ -320,7 +320,11 @@ function run() {
             : environment === constants_1.JEST_ENVIRONMENTS.jsdom
                 ? JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_JSDOM_ENVIRONMENT)
                 : JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_DEFAULT_ENVIRONMENT);
-        process.env['THUNDRA_JEST_ARGUMENTS'] = JEST_DEFAULT_ARGUMENTS.join(' ');
+        core.exportVariable('THUNDRA_JEST_ARGUMENTS', JEST_DEFAULT_ARGUMENTS.join(' '));
+        if (!command) {
+            core.info(`[Thundra] For active Thundra, environment variable "THUNDRA_JEST_ARGUMENTS" must be added to test run process`);
+            return;
+        }
         const commandPieces = CommandHelper.parseCommand(command);
         const commandArgs = CommandHelper.getCommandPart(commandPieces);
         const commandKeyword = commandArgs[commandArgs.length - 1];
@@ -335,7 +339,7 @@ function run() {
             if (parsedCommand) {
                 const updatedPckJson = yield PackageHelper.updateScript(commandKeyword, parsedCommand);
                 yield PackageHelper.updateFile(PackageHelper.packagePath, JSON.stringify(updatedPckJson));
-                process.env['THUNDRA_JEST_ARGUMENTS'] = JEST_DEFAULT_ARGUMENTS.join(' ');
+                core.exportVariable('THUNDRA_JEST_ARGUMENTS', JEST_DEFAULT_ARGUMENTS.join(' '));
                 yield (0, execute_test_1.runTests)(command);
             }
             else {
