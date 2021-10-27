@@ -104,7 +104,15 @@ export default async function run(): Promise<void> {
         ? JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_JSDOM_ENVIRONMENT)
         : JEST_DEFAULT_ARGUMENTS.push(THUNDRA_JEST_DEFAULT_ENVIRONMENT)
 
-    process.env['THUNDRA_JEST_ARGUMENTS'] = JEST_DEFAULT_ARGUMENTS.join(' ')
+    core.exportVariable('THUNDRA_JEST_ARGUMENTS', JEST_DEFAULT_ARGUMENTS.join(' '))
+
+    if (!command) {
+        core.info(
+            `[Thundra] For active Thundra, environment variable "THUNDRA_JEST_ARGUMENTS" must be added to test run process`
+        )
+
+        return
+    }
 
     const commandPieces = CommandHelper.parseCommand(command)
     const commandArgs = CommandHelper.getCommandPart(commandPieces)
@@ -126,7 +134,7 @@ export default async function run(): Promise<void> {
 
             await PackageHelper.updateFile(PackageHelper.packagePath, JSON.stringify(updatedPckJson))
 
-            process.env['THUNDRA_JEST_ARGUMENTS'] = JEST_DEFAULT_ARGUMENTS.join(' ')
+            core.exportVariable('THUNDRA_JEST_ARGUMENTS', JEST_DEFAULT_ARGUMENTS.join(' '))
 
             await runTests(command)
         } else {
