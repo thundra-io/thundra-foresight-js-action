@@ -40,7 +40,6 @@ jobs:
           project_id: ${{ secrets.THUNDRA_PROJECT_ID }}
           
           # Modify or remove the command
-          # Default is "npm test" 
           # Modify accoding to you test script.
           # ex: yarn run test:integration || npm run test:e2e
           command: npm run test:all
@@ -96,6 +95,6 @@ Make sure to follow the instruction in the repository.
 | project_id                | Required          | ---                      | Your project id from Thundra. Will be used to filter and classify your testruns.
 | framework                 | Optional          | jest                     | Test framework type. Currently only jest framework is allowed.
 | environment               | Optional          | ---                      | You can specify Jest test environment using with jsdom or node values. For jest which is >= 27.0.0, default test environment is node. For this reason, Thundra will set its test environment to jest-environment-node. For jest which is < 27.0.0, default test environment is jsdom.  For this reason, Thundra will set its test environment to jest-environment-jsdom.
-| command                   | Required          | ---                      | The Npm / Yarn command you want to run. 
-| append_thundra_arguments  | Required          | true                     | If value is true, Thundra will try to append required argument to your command. If value is false, environment variable `THUNDRA_JEST_ARGUMENTS` must be passed to script as argument manually.
-| agent_version             | Required          | ---                      | A specific version Thundra Node Agent you want to use should be defined here. If this value is not specified latest version of Thundra Node Agent will be use.
+| command                   | Optional          | ---                      | The Npm / Yarn command you want to run. 
+| append_thundra_arguments  | Optional          | true                     | If value is true, Thundra will try to append required argument to your command. If value is false, environment variable `THUNDRA_JEST_ARGUMENTS` must be passed to script as argument manually.
+| agent_version             | Optional          | ---                      | A specific version Thundra Node Agent you want to use should be defined here. If this value is not specified latest version of Thundra Node Agent will be use.
